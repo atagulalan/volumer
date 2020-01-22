@@ -8,31 +8,40 @@ Public Class VolumerForm
 
     Dim ControlTimer As New Timer
     Dim cursorOnTaskbar As Boolean
-    Dim TaskBarRect As Rectangle = Rectangle.Intersect(Screen.PrimaryScreen.WorkingArea, Screen.PrimaryScreen.Bounds)
-    Dim CropRect As New Rectangle
+    Dim CropRects As New ArrayList
 
     Private Sub VolumerForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
 
-        ' Checking where is your taskbak
-        ' If it's width equals to your screen's width, it's horizontal
-        ' If it's height equals to your screen's height, it's vertical
-        If TaskBarRect.Width = Screen.PrimaryScreen.Bounds.Width Then
-            ' If it's y position is not 0, it's on top
-            ' If not, it's on bottom
-            If TaskBarRect.Y <> 0 Then
-                CropRect = New Rectangle(0, 0, TaskBarRect.Width, TaskBarRect.Y)
-            Else
-                CropRect = New Rectangle(0, TaskBarRect.Height, TaskBarRect.Width, Screen.PrimaryScreen.Bounds.Height)
+        For Each OneScreen In Screen.AllScreens
+            Dim TaskBarRect As Rectangle = Rectangle.Intersect(OneScreen.WorkingArea, OneScreen.Bounds)
+            Dim CropRect As New Rectangle
+            ' Checking where is your taskbak
+            ' If it's width equals to your screen's width, it's horizontal
+            ' If it's height equals to your screen's height, it's vertical
+            If TaskBarRect.Width = OneScreen.Bounds.Width Then
+                ' If it's y position is not 0, it's on top
+                ' If not, it's on bottom
+                If TaskBarRect.Y <> 0 Then
+                    CropRect = New Rectangle(OneScreen.Bounds.X, OneScreen.Bounds.Y, TaskBarRect.Width, TaskBarRect.Y)
+                    CropRects.Add(CropRect)
+                Else
+                    CropRect = New Rectangle(OneScreen.Bounds.X, TaskBarRect.Height + OneScreen.Bounds.Y, TaskBarRect.Width, OneScreen.Bounds.Height - OneScreen.WorkingArea.Height)
+                    CropRects.Add(CropRect)
+                End If
+            ElseIf TaskBarRect.Height = OneScreen.Bounds.Height Then
+                ' If it's x position is not 0, it's on left
+                ' If not, it's on right
+                If TaskBarRect.X <> 0 Then
+                    CropRect = New Rectangle(OneScreen.Bounds.X, OneScreen.Bounds.Y, TaskBarRect.X, TaskBarRect.Height)
+                    CropRects.Add(CropRect)
+                Else
+                    CropRect = New Rectangle(TaskBarRect.Width + OneScreen.Bounds.X, OneScreen.Bounds.Y, OneScreen.Bounds.Width, TaskBarRect.Height)
+                    CropRects.Add(CropRect)
+                End If
             End If
-        ElseIf TaskBarRect.Height = Screen.PrimaryScreen.Bounds.Height Then
-            ' If it's x position is not 0, it's on left
-            ' If not, it's on right
-            If TaskBarRect.X <> 0 Then
-                CropRect = New Rectangle(0, 0, TaskBarRect.X, TaskBarRect.Height)
-            Else
-                CropRect = New Rectangle(TaskBarRect.Width, 0, Screen.PrimaryScreen.Bounds.Width, TaskBarRect.Height)
-            End If
-        Else
+        Next
+
+        If CropRects.Count = 0 Then
             ' No taskbar found.
             Application.Exit()
         End If
@@ -74,12 +83,13 @@ Public Class VolumerForm
             Me.Hide()
         End If
 
-        ' Check if cursor is on taskbar
-        If posx >= CropRect.X And posx <= CropRect.Width And posy >= CropRect.Y And posy <= CropRect.Height Then
-            cursorOnTaskbar = True
-        Else
-            cursorOnTaskbar = False
-        End If
+        cursorOnTaskbar = False
+        For Each CropRect In CropRects
+            ' Check if cursor is on taskbar
+            If posx >= CropRect.X And posx <= CropRect.X + CropRect.Width And posy >= CropRect.Y And posy <= CropRect.Y + CropRect.Height Then
+                cursorOnTaskbar = True
+            End If
+        Next
 
     End Sub
 End Class
