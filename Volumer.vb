@@ -13,7 +13,7 @@ Public Class VolumerForm
 
     Private Sub Add(location As String, CropRect As Rectangle)
         If CropRect.Width > 0 And CropRect.Height > 0 Then
-            Console.WriteLine("(" + location + ") Adding Taskbar: " + CropRect.ToString())
+            ' Console.WriteLine("(" + location + ") Adding Taskbar: " + CropRect.ToString())
             CropRects.Add(CropRect)
         End If
     End Sub
@@ -94,7 +94,7 @@ Public Class VolumerForm
                OneScreen.Bounds.Width = screens(i).Item(0).Width And OneScreen.Bounds.Height = screens(i).Item(0).Height And
                OneScreen.WorkingArea.X = screens(i).Item(1).X And OneScreen.WorkingArea.Y = screens(i).Item(0).Y And
                OneScreen.WorkingArea.Width = screens(i).Item(1).Width And OneScreen.WorkingArea.Height = screens(i).Item(0).Height) Then
-                Console.WriteLine("Updating screens...")
+                ' Console.WriteLine("Updating screens...")
                 UpdateScreens()
             End If
         Next
