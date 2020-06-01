@@ -9,37 +9,45 @@ Public Class VolumerForm
     Dim ControlTimer As New Timer
     Dim cursorOnTaskbar As Boolean
     Dim CropRects As New ArrayList
+    Dim screens As New Dictionary(Of String, List(Of Rectangle))
 
-    Private Sub VolumerForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+    Private Sub Add(location As String, CropRect As Rectangle)
+        If CropRect.Width > 0 And CropRect.Height > 0 Then
+            Console.WriteLine("(" + location + ") Adding Taskbar: " + CropRect.ToString())
+            CropRects.Add(CropRect)
+        End If
+    End Sub
 
+    Private Sub UpdateScreens()
+        screens = New Dictionary(Of String, List(Of Rectangle))
         For Each OneScreen In Screen.AllScreens
+            screens.Add(OneScreen.DeviceName, New List(Of Rectangle)(New Rectangle() {OneScreen.Bounds, OneScreen.WorkingArea}))
             Dim TaskBarRect As Rectangle = Rectangle.Intersect(OneScreen.WorkingArea, OneScreen.Bounds)
-            Dim CropRect As New Rectangle
             ' Checking where is your taskbak
             ' If it's width equals to your screen's width, it's horizontal
             ' If it's height equals to your screen's height, it's vertical
             If TaskBarRect.Width = OneScreen.Bounds.Width Then
                 ' If it's y position is not 0, it's on top
                 ' If not, it's on bottom
-                If TaskBarRect.Y <> 0 Then
-                    CropRect = New Rectangle(OneScreen.Bounds.X, OneScreen.Bounds.Y, TaskBarRect.Width, TaskBarRect.Y)
-                    CropRects.Add(CropRect)
+                If TaskBarRect.Y <> OneScreen.Bounds.Y Then
+                    Add("Top", New Rectangle(OneScreen.Bounds.X, OneScreen.Bounds.Y, TaskBarRect.Width, TaskBarRect.Y - OneScreen.Bounds.Y))
                 Else
-                    CropRect = New Rectangle(OneScreen.Bounds.X, TaskBarRect.Height + OneScreen.Bounds.Y, TaskBarRect.Width, OneScreen.Bounds.Height - OneScreen.WorkingArea.Height)
-                    CropRects.Add(CropRect)
+                    Add("Bottom", New Rectangle(OneScreen.Bounds.X, TaskBarRect.Height + OneScreen.Bounds.Y, TaskBarRect.Width, OneScreen.Bounds.Height - OneScreen.WorkingArea.Height))
                 End If
             ElseIf TaskBarRect.Height = OneScreen.Bounds.Height Then
                 ' If it's x position is not 0, it's on left
                 ' If not, it's on right
-                If TaskBarRect.X <> 0 Then
-                    CropRect = New Rectangle(OneScreen.Bounds.X, OneScreen.Bounds.Y, TaskBarRect.X, TaskBarRect.Height)
-                    CropRects.Add(CropRect)
+                If TaskBarRect.X <> OneScreen.Bounds.X Then
+                    Add("Left", New Rectangle(OneScreen.Bounds.X, OneScreen.Bounds.Y, TaskBarRect.X - OneScreen.Bounds.X, TaskBarRect.Height))
                 Else
-                    CropRect = New Rectangle(TaskBarRect.Width + OneScreen.Bounds.X, OneScreen.Bounds.Y, OneScreen.Bounds.Width, TaskBarRect.Height)
-                    CropRects.Add(CropRect)
+                    Add("Right", New Rectangle(TaskBarRect.Width + OneScreen.Bounds.X, OneScreen.Bounds.Y, OneScreen.Bounds.Width, TaskBarRect.Height))
                 End If
             End If
         Next
+    End Sub
+
+    Private Sub VolumerForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        UpdateScreens()
 
         If CropRects.Count = 0 Then
             ' No taskbar found.
@@ -54,7 +62,6 @@ Public Class VolumerForm
         ' Start global mouse hook
         MouseHook.Start()
         AddHandler MouseHook.MouseWheel, AddressOf Mouse_Wheel
-
     End Sub
 
     Private Sub VolumerForm_Closing(sender As Object, e As EventArgs) Handles Me.FormClosing
@@ -62,7 +69,6 @@ Public Class VolumerForm
     End Sub
 
     Private Sub Mouse_Wheel(ByVal sender As Object, ByVal e As EventArgs)
-
         If (cursorOnTaskbar) Then
             If (CInt(MouseHook.MouseWheelInfo.ToString) > 0) Then
                 SendMessage(Handle, &H319, &H30292, &HA * &H10000) ' Volume Up
@@ -70,11 +76,9 @@ Public Class VolumerForm
                 SendMessage(Handle, &H319, &H30292, &H9 * &H10000) ' Volume Down
             End If
         End If
-
     End Sub
 
     Private Sub ControlTimer_Tick(sender As Object, e As EventArgs)
-
         Dim posx = Cursor.Position.X
         Dim posy = Cursor.Position.Y
 
@@ -83,6 +87,18 @@ Public Class VolumerForm
             Me.Hide()
         End If
 
+        ' Check resolution
+        For Each OneScreen In Screen.AllScreens
+            Dim i = OneScreen.DeviceName
+            If Not (OneScreen.Bounds.X = screens(i).Item(0).X And OneScreen.Bounds.Y = screens(i).Item(0).Y And
+               OneScreen.Bounds.Width = screens(i).Item(0).Width And OneScreen.Bounds.Height = screens(i).Item(0).Height And
+               OneScreen.WorkingArea.X = screens(i).Item(1).X And OneScreen.WorkingArea.Y = screens(i).Item(0).Y And
+               OneScreen.WorkingArea.Width = screens(i).Item(1).Width And OneScreen.WorkingArea.Height = screens(i).Item(0).Height) Then
+                Console.WriteLine("Updating screens...")
+                UpdateScreens()
+            End If
+        Next
+
         cursorOnTaskbar = False
         For Each CropRect In CropRects
             ' Check if cursor is on taskbar
@@ -90,7 +106,6 @@ Public Class VolumerForm
                 cursorOnTaskbar = True
             End If
         Next
-
     End Sub
 End Class
 
