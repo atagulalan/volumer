@@ -7,6 +7,9 @@ Public Class VolumerForm
     End Function
 
     Dim ControlTimer As New Timer
+    Dim TaskbarIcon As New NotifyIcon
+    Dim Context As New ContextMenu
+
     Dim cursorOnTaskbar As Boolean
     Dim CropRects As New ArrayList
     Dim screens As New Dictionary(Of String, List(Of Rectangle))
@@ -59,6 +62,28 @@ Public Class VolumerForm
         ControlTimer.Interval = 1
         ControlTimer.Enabled = True
 
+        ' Set reload button
+        Dim ReloadButton As New MenuItem
+        ReloadButton.Index = 0
+        ReloadButton.Text = "&Reload"
+        AddHandler ReloadButton.Click, AddressOf UpdateScreens
+
+        ' Set exit button
+        Dim ExitButton As New MenuItem
+        ExitButton.Index = 1
+        ExitButton.Text = "E&xit"
+        AddHandler ExitButton.Click, AddressOf ExitApplication
+
+        ' Set taskbar icon
+        TaskbarIcon.Icon = My.Resources.VolumerIcon
+        TaskbarIcon.Text = "Volumer"
+        TaskbarIcon.Visible = True
+
+        ' Add context menu
+        Context.MenuItems.Add(ReloadButton)
+        Context.MenuItems.Add(ExitButton)
+        TaskbarIcon.ContextMenu = Context
+
         ' Start global mouse hook
         MouseHook.Start()
         AddHandler MouseHook.MouseWheel, AddressOf Mouse_Wheel
@@ -78,6 +103,10 @@ Public Class VolumerForm
         End If
     End Sub
 
+    Private Sub ExitApplication(sender As Object, e As EventArgs)
+        Application.Exit()
+    End Sub
+
     Private Sub ControlTimer_Tick(sender As Object, e As EventArgs)
         Dim posx = Cursor.Position.X
         Dim posy = Cursor.Position.Y
@@ -87,17 +116,18 @@ Public Class VolumerForm
             Me.Hide()
         End If
 
+        ' MAJOR PROBLEM: POSSIBLE MEMORY LEAK.
         ' Check resolution
-        For Each OneScreen In Screen.AllScreens
-            Dim i = OneScreen.DeviceName
-            If Not (OneScreen.Bounds.X = screens(i).Item(0).X And OneScreen.Bounds.Y = screens(i).Item(0).Y And
-               OneScreen.Bounds.Width = screens(i).Item(0).Width And OneScreen.Bounds.Height = screens(i).Item(0).Height And
-               OneScreen.WorkingArea.X = screens(i).Item(1).X And OneScreen.WorkingArea.Y = screens(i).Item(0).Y And
-               OneScreen.WorkingArea.Width = screens(i).Item(1).Width And OneScreen.WorkingArea.Height = screens(i).Item(0).Height) Then
-                ' Console.WriteLine("Updating screens...")
-                UpdateScreens()
-            End If
-        Next
+        'For Each OneScreen In Screen.AllScreens
+        '    Dim i = OneScreen.DeviceName
+        '    If Not (OneScreen.Bounds.X = screens(i).Item(0).X And OneScreen.Bounds.Y = screens(i).Item(0).Y And
+        '       OneScreen.Bounds.Width = screens(i).Item(0).Width And OneScreen.Bounds.Height = screens(i).Item(0).Height And
+        '       OneScreen.WorkingArea.X = screens(i).Item(1).X And OneScreen.WorkingArea.Y = screens(i).Item(0).Y And
+        '       OneScreen.WorkingArea.Width = screens(i).Item(1).Width And OneScreen.WorkingArea.Height = screens(i).Item(0).Height) Then
+        '        ' Console.WriteLine("Updating screens...")
+        '        UpdateScreens()
+        '    End If
+        'Next
 
         cursorOnTaskbar = False
         For Each CropRect In CropRects
