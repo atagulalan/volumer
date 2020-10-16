@@ -12,61 +12,22 @@ Public Class VolumerForm
 
     Dim cursorOnTaskbar As Boolean
     Dim CropRects As New ArrayList
-    Dim screens As New Dictionary(Of String, List(Of Rectangle))
 
-    Private Sub Add(location As String, CropRect As Rectangle)
+    Private Sub Add(CropRect As Rectangle)
         If CropRect.Width > 0 And CropRect.Height > 0 Then
             ' Console.WriteLine("(" + location + ") Adding Taskbar: " + CropRect.ToString())
             CropRects.Add(CropRect)
         End If
     End Sub
 
-    Private Sub UpdateScreens()
-        screens = New Dictionary(Of String, List(Of Rectangle))
-        For Each OneScreen In Screen.AllScreens
-            screens.Add(OneScreen.DeviceName, New List(Of Rectangle)(New Rectangle() {OneScreen.Bounds, OneScreen.WorkingArea}))
-            Dim TaskBarRect As Rectangle = Rectangle.Intersect(OneScreen.WorkingArea, OneScreen.Bounds)
-            ' Checking where is your taskbak
-            ' If it's width equals to your screen's width, it's horizontal
-            ' If it's height equals to your screen's height, it's vertical
-            If TaskBarRect.Width = OneScreen.Bounds.Width Then
-                ' If it's y position is not 0, it's on top
-                ' If not, it's on bottom
-                If TaskBarRect.Y <> OneScreen.Bounds.Y Then
-                    Add("Top", New Rectangle(OneScreen.Bounds.X, OneScreen.Bounds.Y, TaskBarRect.Width, TaskBarRect.Y - OneScreen.Bounds.Y))
-                Else
-                    Add("Bottom", New Rectangle(OneScreen.Bounds.X, TaskBarRect.Height + OneScreen.Bounds.Y, TaskBarRect.Width, OneScreen.Bounds.Height - OneScreen.WorkingArea.Height))
-                End If
-            ElseIf TaskBarRect.Height = OneScreen.Bounds.Height Then
-                ' If it's x position is not 0, it's on left
-                ' If not, it's on right
-                If TaskBarRect.X <> OneScreen.Bounds.X Then
-                    Add("Left", New Rectangle(OneScreen.Bounds.X, OneScreen.Bounds.Y, TaskBarRect.X - OneScreen.Bounds.X, TaskBarRect.Height))
-                Else
-                    Add("Right", New Rectangle(TaskBarRect.Width + OneScreen.Bounds.X, OneScreen.Bounds.Y, OneScreen.Bounds.Width, TaskBarRect.Height))
-                End If
-            End If
-        Next
-    End Sub
 
     Private Sub VolumerForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        UpdateScreens()
-
-        If CropRects.Count = 0 Then
-            ' No taskbar found.
-            Application.Exit()
-        End If
+        Add(New Rectangle(0, 0, 20, 1440))
 
         ' Set timer & start
         AddHandler ControlTimer.Tick, AddressOf ControlTimer_Tick
         ControlTimer.Interval = 1
         ControlTimer.Enabled = True
-
-        ' Set reload button
-        Dim ReloadButton As New MenuItem
-        ReloadButton.Index = 0
-        ReloadButton.Text = "&Reload"
-        AddHandler ReloadButton.Click, AddressOf UpdateScreens
 
         ' Set exit button
         Dim ExitButton As New MenuItem
@@ -80,7 +41,6 @@ Public Class VolumerForm
         TaskbarIcon.Visible = True
 
         ' Add context menu
-        Context.MenuItems.Add(ReloadButton)
         Context.MenuItems.Add(ExitButton)
         TaskbarIcon.ContextMenu = Context
 
